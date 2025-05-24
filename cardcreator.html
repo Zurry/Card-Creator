@@ -207,8 +207,8 @@
             </div>
 
             <div class="form-group">
-                <label for="zurryCardsText" class="text-gray-700">Signature Text:</label>
-                <input type="text" id="zurryCardsText" value="Zurry Cards" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                <label for="signatureText" class="text-gray-700">Signature Text:</label>
+                <input type="text" id="signatureText" value="Zurry Cards" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
             </div>
 
             <div class="form-group">
@@ -234,7 +234,7 @@
         const cardTitleInput = document.getElementById('cardTitle');
         const cardTitleColorInput = document.getElementById('cardTitleColor');
         const bottomTextInput = document.getElementById('bottomText');
-        const zurryCardsTextInput = document.getElementById('zurryCardsText');
+        const signatureTextInput = document.getElementById('signatureText');
         const cardSeriesInput = document.getElementById('cardSeries');
         const cardCanvas = document.getElementById('cardCanvas');
         const ctx = cardCanvas.getContext('2d');
@@ -263,7 +263,7 @@
         const bottomTextMargin = 15; // Increased margin from the bottom of the card for the main text box
         const bottomTextAreaHeight = 35; // Fixed height for bottom text box
         const bottomTextBoxRadius = 8; // Rounded corners for bottom text box
-        const bottomInfoTextOffset = 5; // Offset for "Zurry Cards" and series text from the very bottom edge
+        const bottomInfoTextOffset = 5; // Offset for Signature and series text from the very bottom edge
         const maxTitleFontSize = 32; // Maximum font size for the title
 
 
@@ -849,15 +849,15 @@
                 currentLineY += bottomTextFitResult.lineHeight;
             }
 
-            // --- Draw "Zurry Cards" (bottom left, vertically centered in bottom border) ---
+            // --- Draw "Signature" (bottom left, vertically centered in bottom border) ---
             const smallTextColor = getContrastColor(borderColorInput.value);
             currentCtx.font = `italic ${12 * scaleFactor}px "Open Sans", sans-serif`;
             currentCtx.fillStyle = smallTextColor;
             currentCtx.textAlign = 'left';
             currentCtx.textBaseline = 'middle';
             const bottomBorderAreaHeight = currentCardHeight - (textBoxY + scaledBottomTextAreaHeight);
-            const zurryCardsY = textBoxY + scaledBottomTextAreaHeight + (bottomBorderAreaHeight / 2);
-            currentCtx.fillText(zurryCardsTextInput.value, scaledMainContentPadding, zurryCardsY);
+            const signatureY = textBoxY + scaledBottomTextAreaHeight + (bottomBorderAreaHeight / 2);
+            currentCtx.fillText(signatureTextInput.value, scaledMainContentPadding, signatureY);
 
             // --- Draw Card Series (bottom right, vertically centered in bottom border) ---
             currentCtx.font = `italic ${14 * scaleFactor}px "Open Sans", sans-serif`;
