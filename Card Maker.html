@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Card Creator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Roboto+Condensed:wght@400;700&family=Inter:wght@400;600&family=Open+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #f0f4f8;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+        }
+        @media (min-width: 768px) {
+            .container {
+                flex-direction: row;
+                justify-content: space-between;
+            }
+        }
+        .input-section, .preview-section {
+            flex: 1;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #f8fafc;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
+        }
+        .input-section {
+            margin-right: 0;
+        }
+        @media (min-width: 768px) {
+            .input-section {
+                margin-right: 20px;
+            }
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #334155;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="color"],
+        .form-group input[type="file"],
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 1rem;
+            color: #334155;
+            box-sizing: border-box; /* Ensures padding doesn't increase width */
+        }
+        .form-group input[type="file"] {
+            padding: 6px 12px; /* Adjust for file input button */
+        }
+        .color-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .color-display {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb;
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background-color: #64748b;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #475569;
+            transform: translateY(-1px);
+        }
+        #cardCanvas {
+            background-color: #e2e8f0; /* Fallback background for canvas */
+            display: block; /* Remove extra space below canvas */
+            max-width: 100%; /* Ensure responsiveness */
+            height: auto; /* Maintain aspect ratio */
+            border-radius: 12px; /* Rounded corners for the canvas element */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+            cursor: grab; /* Default cursor for draggable element */
+        }
+        #cardCanvas.eyedropper-active {
+            cursor: crosshair; /* Eyedropper cursor */
+        }
+        #cardCanvas.dragging {
+            cursor: grabbing; /* Cursor when dragging */
+        }
+        .message-box {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50; /* Green for success */
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .message-box.show {
+            opacity: 1;
+        }
+        .message-box.error {
+            background-color: #f44336; /* Red for error */
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="container flex flex-col md:flex-row gap-8 bg-white rounded-xl shadow-lg p-8 w-full max-w-6xl">
+        <div class="input-section flex-1 p-6 bg-blue-50 rounded-lg shadow-inner">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Customize Your Card</h2>
+
+            <div class="form-group">
+                <label for="imageFile" class="text-gray-700">Image File (JPG or PNG):</label>
+                <input type="file" id="imageFile" accept="image/jpeg, image/png" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200">
+            </div>
+
+            <div class="form-group">
+                <label for="borderColor" class="text-gray-700">Card Background Color:</label>
+                <div class="color-input-wrapper">
+                    <input type="color" id="borderColor" value="#A0AEC0" class="flex-grow">
+                    <div id="borderColorDisplay" class="color-display bg-gray-400 rounded-md shadow-sm"></div>
+                    <button type="button" class="btn btn-primary text-sm px-3 py-2 rounded-md" onclick="activateEyedropper('borderColor')">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M17.293 2.293a1 1 0 011.414 0l2 2a1 1 0 010 1.414l-14 14a1 1 0 01-1.414 0l-2-2a1 1 0 010-1.414l14-14zM12 14a2 2 0 100-4 2 2 0 000 4z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="cardTitle" class="text-gray-700">Card Title:</label>
+                <input type="text" id="cardTitle" placeholder="Enter card name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <div class="form-group">
+                <label for="cardTitleColor" class="text-gray-700">Card Title Color:</label>
+                <div class="color-input-wrapper">
+                    <input type="color" id="cardTitleColor" value="#FFFFFF" class="flex-grow">
+                    <div id="cardTitleColorDisplay" class="color-display bg-white rounded-md shadow-sm"></div>
+                    <button type="button" class="btn btn-primary text-sm px-3 py-2 rounded-md" onclick="activateEyedropper('cardTitleColor')">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M17.293 2.293a1 1 0 011.414 0l2 2a1 1 0 010 1.414l-14 14a1 1 0 01-1.414 0l-2-2a1 1 0 010-1.414l14-14zM12 14a2 2 0 100-4 2 2 0 000 4z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="bottomText" class="text-gray-700">Card Description:</label>
+                <input type="text" id="bottomText" placeholder="Enter description or stats" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <div class="form-group">
+                <label for="zurryCardsText" class="text-gray-700">Zurry Cards Text:</label>
+                <input type="text" id="zurryCardsText" value="Zurry Cards" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <div class="form-group">
+                <label for="cardSeries" class="text-gray-700">Card Series:</label>
+                <input type="text" id="cardSeries" placeholder="Enter series name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <button onclick="generateCard()" class="btn btn-primary w-full mt-6 text-lg">Generate Card</button>
+        </div>
+
+        <div class="preview-section flex-1 p-6 bg-gray-50 rounded-lg shadow-inner flex flex-col items-center justify-center">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Your Trading Card</h2>
+            <canvas id="cardCanvas" width="350" height="490" class="max-w-full h-auto rounded-lg shadow-xl mb-6"></canvas>
+            <button onclick="downloadCard()" class="btn btn-secondary w-full md:w-auto text-lg">Download Card</button>
+        </div>
+    </div>
+
+    <div id="messageBox" class="message-box"></div>
+
+    <script>
+        const imageFile = document.getElementById('imageFile');
+        const borderColorInput = document.getElementById('borderColor');
+        const cardTitleInput = document.getElementById('cardTitle');
+        const cardTitleColorInput = document.getElementById('cardTitleColor');
+        const bottomTextInput = document.getElementById('bottomText');
+        const zurryCardsTextInput = document.getElementById('zurryCardsText');
+        const cardSeriesInput = document.getElementById('cardSeries');
+        const cardCanvas = document.getElementById('cardCanvas');
+        const ctx = cardCanvas.getContext('2d');
+        const borderColorDisplay = document.getElementById('borderColorDisplay');
+        const cardTitleColorDisplay = document.getElementById('cardTitleColorDisplay');
+        const messageBox = document.getElementById('messageBox');
+
+        let uploadedImage = null;
+        let subtleTexturePattern = null;
+        let activeEyedropperTarget = null; // Stores the ID of the input to update
+        let eyedropperListenerAdded = false; // Flag to manage eyedropper listeners
+
+        // Image dragging state
+        let isDragging = false;
+        let lastMouseX = 0; // For horizontal drag
+        let lastMouseY = 0; // For vertical drag
+        let imageOffsetX = 0; // The horizontal offset of the image source rectangle (sx in drawImage)
+        let imageOffsetY = 0; // The vertical offset of the image source rectangle (sy in drawImage)
+
+        // --- Global Constants for Card Layout ---
+        const cardWidth = 350; // Base width for the card
+        const cardHeight = cardWidth / 0.714; // Calculate height based on ratio
+        const cardCornerRadius = 12; // Matches CSS border-radius
+        const mainContentPadding = 4; // Padding from the outer edge of the card
+        const titleTextTopMargin = 25; // Margin for title text from top of card
+        const bottomTextMargin = 15; // Increased margin from the bottom of the card for the main text box
+        const bottomTextAreaHeight = 35; // Fixed height for bottom text box
+        const bottomTextBoxRadius = 8; // Rounded corners for bottom text box
+        const bottomInfoTextOffset = 5; // Offset for "Zurry Cards" and series text from the very bottom edge
+        const maxTitleFontSize = 32; // Maximum font size for the title
+
+
+        // Initialize color displays and texture pattern
+        borderColorDisplay.style.backgroundColor = borderColorInput.value;
+        cardTitleColorDisplay.style.backgroundColor = cardTitleColorInput.value;
+        subtleTexturePattern = createSubtleTexturePattern('rgba(0,0,0,0.04)', 16);
+
+
+        // Event listener for image file selection
+        imageFile.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedImage = new Image();
+                    uploadedImage.onload = function() {
+                        // Reset image offsets when a new image is loaded
+                        imageOffsetX = 0;
+                        imageOffsetY = 0;
+                        showMessage('Image loaded successfully!', 'success');
+                        generateCard(); // Generate card with new image
+                    };
+                    uploadedImage.onerror = function() {
+                        showMessage('Error loading image. Please try another file.', 'error');
+                        uploadedImage = null;
+                    };
+                    uploadedImage.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                uploadedImage = null;
+            }
+        });
+
+        // Event listener for border color change
+        borderColorInput.addEventListener('input', function() {
+            borderColorDisplay.style.backgroundColor = this.value;
+        });
+
+        // Event listener for card title color change
+        cardTitleColorInput.addEventListener('input', function() {
+            cardTitleColorDisplay.style.backgroundColor = this.value;
+        });
+
+        /**
+         * Displays a temporary message box.
+         * @param {string} message - The message to display.
+         * @param {'success' | 'error'} type - The type of message (determines color).
+         */
+        function showMessage(message, type) {
+            messageBox.textContent = message;
+            messageBox.className = 'message-box show'; // Reset classes
+            if (type === 'error') {
+                messageBox.classList.add('error');
+            } else {
+                messageBox.classList.remove('error');
+            }
+
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, 3000); // Message disappears after 3 seconds
+        }
+
+        /**
+         * Draws a rounded rectangle on a canvas context with specific corner rounding.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x - The x-coordinate of the top-left corner.
+         * @param {number} y - The y-coordinate of the top-left corner.
+         * @param {number} width - The width of the rectangle.
+         * @param {number} height - The height of the rectangle.
+         * @param {number|object} radii - The corner radii. Can be a single number for all,
+         * or an object like { tl: 0, tr: 0, br: 8, bl: 8 }
+         */
+        function roundRectComplex(ctx, x, y, width, height, radii) {
+            if (typeof radii === 'number') {
+                radii = { tl: radii, tr: radii, br: radii, bl: radii };
+            } else {
+                radii = { ...{ tl: 0, tr: 0, br: 0, bl: 0 }, ...radii };
+            }
+
+            ctx.beginPath();
+            ctx.moveTo(x + radii.tl, y);
+            ctx.lineTo(x + width - radii.tr, y);
+            ctx.arcTo(x + width, y, x + width, y + radii.tr, radii.tr);
+            ctx.lineTo(x + width, y + height - radii.br);
+            ctx.arcTo(x + width, y + height, x + width - radii.br, y + height, radii.br);
+            ctx.lineTo(x + radii.bl, y + height);
+            ctx.arcTo(x, y + height, x, y + height - radii.bl, radii.bl);
+            ctx.lineTo(x, y + radii.tl);
+            ctx.arcTo(x, y, x + radii.tl, y, radii.tl);
+            ctx.closePath();
+        }
+
+        /**
+         * Converts RGB color components to a hexadecimal string.
+         * @param {number} r - Red component (0-255).
+         * @param {number} g - Green component (0-255).
+         * @param {number} b - Blue component (0-255).
+         * @returns {string} Hexadecimal color string (e.g., "#RRGGBB").
+         */
+        function rgbToHex(r, g, b) {
+            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+        }
+
+        /**
+         * Determines if a hex color is light or dark for contrast.
+         * @param {string} hexColor - The hex color string (e.g., "#RRGGBB").
+         * @returns {string} - "#1a202c" (dark) for light colors, "#f0f4f8" (light) for dark colors.
+         */
+        function getContrastColor(hexColor) {
+            const r = parseInt(hexColor.substring(1, 3), 16);
+            const g = parseInt(hexColor.substring(3, 5), 16);
+            const b = parseInt(hexColor.substring(5, 7), 16);
+
+            // Perceived luminance (ITU-R BT.709)
+            // https://www.w3.org/TR/WCAG20/#relativeluminancedef
+            const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+
+            // Use a threshold to decide between light and dark text
+            return luminance > 0.5 ? '#1a202c' : '#f0f4f8'; // Dark gray or Light gray
+        }
+
+        /**
+         * Darkens a hex color by a given percentage.
+         * @param {string} hexColor - The hex color string (e.g., "#RRGGBB").
+         * @param {number} percent - The percentage to darken (e.g., 10 for 10%).
+         * @returns {string} The darkened hex color.
+         */
+        function darkenColor(hexColor, percent) {
+            let r = parseInt(hexColor.substring(1, 3), 16);
+            let g = parseInt(hexColor.substring(3, 5), 16);
+            let b = parseInt(hexColor.substring(5, 7), 16);
+
+            r = Math.max(0, r - Math.round(255 * (percent / 100)));
+            g = Math.max(0, g - Math.round(255 * (percent / 100)));
+            b = Math.max(0, b - Math.round(255 * (percent / 100)));
+
+            const toHex = (c) => ('0' + c.toString(16)).slice(-2);
+            return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+        }
+
+        /**
+         * Draws a subtle geometric texture pattern on a temporary canvas.
+         * This function is called once to create a reusable pattern.
+         * @param {string} patternColor - The color of the pattern elements (e.g., 'rgba(0,0,0,0.04)').
+         * @param {number} patternSize - The size of the repeating pattern square.
+         * @returns {CanvasPattern} A CanvasPattern object.
+         */
+        function createSubtleTexturePattern(patternColor = 'rgba(0,0,0,0.04)', patternSize = 16) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = patternSize;
+            tempCanvas.height = patternSize;
+            const tempCtx = tempCanvas.getContext('2d');
+
+            // Draw a subtle diagonal crosshatch pattern
+            tempCtx.strokeStyle = patternColor;
+            tempCtx.lineWidth = 1;
+
+            // First set of diagonal lines
+            tempCtx.beginPath();
+            tempCtx.moveTo(0, 0);
+            tempCtx.lineTo(patternSize, patternSize);
+            tempCtx.stroke();
+
+            // Second set of diagonal lines
+            tempCtx.beginPath();
+            tempCtx.moveTo(patternSize, 0);
+            tempCtx.lineTo(0, patternSize);
+            tempCtx.stroke();
+
+            return ctx.createPattern(tempCtx.canvas, 'repeat');
+        }
+
+        /**
+         * Wraps text to fit within a maximum width and returns lines.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {string} text - The text to wrap.
+         * @param {number} maxWidth - The maximum width for a line.
+         * @param {number} lineHeight - The height of each line.
+         * @returns {object} An object containing the wrapped lines and total height.
+         */
+        function wrapText(ctx, text, maxWidth, lineHeight) {
+            const words = text.split(' ');
+            let line = '';
+            let lines = [];
+            let totalHeight = 0;
+
+            for (let n = 0; n < words.length; n++) {
+                const testLine = line + words[n] + ' ';
+                const metrics = ctx.measureText(testLine);
+                const testWidth = metrics.width;
+                if (testWidth > maxWidth && n > 0) {
+                    lines.push(line.trim());
+                    line = words[n] + ' ';
+                    totalHeight += lineHeight;
+                } else {
+                    line = testLine;
+                }
+            }
+            lines.push(line.trim());
+            totalHeight += lineHeight; // Add height for the last line
+
+            return { lines: lines, height: totalHeight };
+        }
+
+        /**
+         * Fits text into a given box by adjusting font size and wrapping lines.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {string} text - The text to fit.
+         * @param {number} boxWidth - The width of the bounding box.
+         * @param {number} boxHeight - The height of the bounding box.
+         * @param {number} initialFontSize - The starting font size.
+         * @param {string} fontFace - The font family string (e.g., "Open Sans").
+         * @returns {object} An object with optimal fontSize, wrapped lines, and lineHeight.
+         */
+        function fitTextToBox(ctx, text, boxWidth, boxHeight, initialFontSize, fontFace) {
+            let fontSize = initialFontSize;
+            let wrappedContent;
+            let totalHeight;
+            const minFontSize = 8; // Minimum readable font size
+
+            do {
+                ctx.font = `${fontSize}px "${fontFace}"`;
+                const lineHeight = fontSize * 1.2; // Standard line height for readability
+                wrappedContent = wrapText(ctx, text, boxWidth, lineHeight);
+                totalHeight = wrappedContent.height;
+
+                if (totalHeight > boxHeight && fontSize > minFontSize) {
+                    fontSize -= 1; // Reduce font size if it doesn't fit
+                } else {
+                    break; // Fits or reached min size
+                }
+            } while (true);
+
+            return { fontSize: fontSize, lines: wrappedContent.lines, lineHeight: fontSize * 1.2, totalHeight: totalHeight };
+        }
+
+        /**
+         * Fits text into a given width by adjusting font size.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {string} text - The text to fit.
+         * @param {number} maxWidth - The maximum width for the text.
+         * @param {number} initialFontSize - The starting font size.
+         * @param {string} fontFace - The font family string (e.g., "Merriweather").
+         * @returns {number} The optimal font size.
+         */
+        function fitTextToWidth(ctx, text, maxWidth, initialFontSize, fontFace) {
+            let fontSize = initialFontSize;
+            ctx.font = `bold ${fontSize}px "${fontFace}"`;
+            let textWidth = ctx.measureText(text).width;
+
+            while (textWidth > maxWidth && fontSize > 8) { // Minimum font size 8
+                fontSize -= 1;
+                ctx.font = `bold ${fontSize}px "${fontFace}"`;
+                textWidth = ctx.measureText(text).width;
+            }
+            return fontSize;
+        }
+
+        /**
+         * Activates the eyedropper mode for a specific color input.
+         * @param {string} targetId - The ID of the color input to update.
+         */
+        function activateEyedropper(targetId) {
+            if (!uploadedImage) {
+                showMessage('Please generate a card with an image first to use the eyedropper.', 'error');
+                return;
+            }
+            if (eyedropperListenerAdded) {
+                // If already active, deactivate before reactivating for a new target
+                deactivateEyedropper();
+            }
+
+            activeEyedropperTarget = targetId;
+            cardCanvas.classList.add('eyedropper-active');
+            showMessage('Click on the card to pick a color.', 'success');
+
+            // Add temporary listeners for eyedropper
+            cardCanvas.addEventListener('pointerdown', handleEyedropperPointerDown);
+            cardCanvas.addEventListener('pointerup', handleEyedropperPointerUp);
+            eyedropperListenerAdded = true;
+
+            // Temporarily disable dragging listeners
+            removeDraggingListeners();
+        }
+
+        /**
+         * Deactivates the eyedropper mode.
+         */
+        function deactivateEyedropper() {
+            activeEyedropperTarget = null;
+            cardCanvas.classList.remove('eyedropper-active');
+            if (eyedropperListenerAdded) {
+                cardCanvas.removeEventListener('pointerdown', handleEyedropperPointerDown);
+                cardCanvas.removeEventListener('pointerup', handleEyedropperPointerUp);
+                eyedropperListenerAdded = false;
+
+                // Re-enable dragging listeners
+                addDraggingListeners();
+            }
+        }
+
+        /**
+         * Handles pointer down for eyedropper.
+         * @param {PointerEvent} event
+         */
+        function handleEyedropperPointerDown(event) {
+            event.preventDefault(); // Prevent default browser actions like dragging or text selection
+        }
+
+        /**
+         * Handles pointer up for eyedropper.
+         * @param {PointerEvent} event
+         */
+        function handleEyedropperPointerUp(event) {
+            if (!activeEyedropperTarget) return;
+
+            const rect = cardCanvas.getBoundingClientRect();
+            const x = Math.floor((event.clientX - rect.left) * (cardCanvas.width / rect.width));
+            const y = Math.floor((event.clientY - rect.top) * (cardCanvas.height / rect.height));
+
+            try {
+                const pixel = ctx.getImageData(x, y, 1, 1).data;
+                const hexColor = rgbToHex(pixel[0], pixel[1], pixel[2]);
+
+                const targetInput = document.getElementById(activeEyedropperTarget);
+                const targetDisplay = document.getElementById(activeEyedropperTarget + 'Display');
+
+                if (targetInput) {
+                    targetInput.value = hexColor;
+                    targetDisplay.style.backgroundColor = hexColor;
+                }
+                showMessage('Color picked successfully!', 'success');
+            } catch (e) {
+                console.error("Eyedropper error:", e);
+                showMessage('Could not pick color. Ensure image is loaded from a local source or server with CORS enabled.', 'error');
+            } finally {
+                deactivateEyedropper(); // Always deactivate after a pick attempt
+            }
+        }
+
+        // --- Image Dragging Event Handlers ---
+        function handleMouseDown(event) {
+            if (event.button === 0 && uploadedImage) { // Left mouse button and image is loaded
+                isDragging = true;
+                lastMouseX = event.clientX;
+                lastMouseY = event.clientY;
+                cardCanvas.classList.add('dragging');
+            }
+        }
+
+        function handleMouseMove(event) {
+            if (!isDragging || !uploadedImage) return;
+
+            const rect = cardCanvas.getBoundingClientRect();
+            const currentX = event.clientX;
+            const currentY = event.clientY;
+            const deltaX = currentX - lastMouseX;
+            const deltaY = currentY - lastMouseY;
+
+            // Calculate imageAreaHeight for the current canvas (not scaled)
+            const currentImageAreaHeight = cardCanvas.height - (mainContentPadding * 2 * (cardCanvas.height / cardHeight)) - (bottomTextMargin * (cardCanvas.height / cardHeight)) - (bottomTextAreaHeight * (cardCanvas.height / cardHeight));
+
+            const imgAspectRatio = uploadedImage.width / uploadedImage.height;
+            const areaAspectRatio = cardCanvas.width / currentImageAreaHeight;
+
+            if (imgAspectRatio > areaAspectRatio) {
+                // Image is wider than the area: enable horizontal drag
+                const sWidthNeeded = uploadedImage.height * areaAspectRatio;
+                const maxHorizontalScroll = uploadedImage.width - sWidthNeeded;
+                const scaleXToSource = uploadedImage.width / cardCanvas.width; // Scaling factor for X
+                imageOffsetX = Math.max(0, Math.min(imageOffsetX - (deltaX * scaleXToSource), maxHorizontalScroll));
+                imageOffsetY = 0; // Vertical offset is irrelevant for horizontal drag
+            } else {
+                // Image is taller or same aspect ratio: enable vertical drag
+                const sHeightNeeded = uploadedImage.width / areaAspectRatio;
+                const maxVerticalScroll = uploadedImage.height - sHeightNeeded;
+                const scaleYToSource = uploadedImage.height / currentImageAreaHeight; // Scaling factor for Y
+                imageOffsetY = Math.max(0, Math.min(imageOffsetY - (deltaY * scaleYToSource), maxVerticalScroll));
+                imageOffsetX = 0; // Horizontal offset is irrelevant for vertical drag
+            }
+
+            lastMouseX = currentX;
+            lastMouseY = currentY;
+            drawCardContent(ctx, cardCanvas); // Redraw the card
+            event.preventDefault(); // Prevent default browser dragging behavior
+        }
+
+        function handleMouseUp() {
+            isDragging = false;
+            cardCanvas.classList.remove('dragging');
+        }
+
+        function handleTouchStart(event) {
+            if (event.touches.length === 1 && uploadedImage) {
+                isDragging = true;
+                lastMouseX = event.touches[0].clientX;
+                lastMouseY = event.touches[0].clientY;
+                cardCanvas.classList.add('dragging');
+                event.preventDefault(); // Prevent scrolling
+            }
+        }
+
+        function handleTouchMove(event) {
+            if (!isDragging || !uploadedImage || event.touches.length !== 1) return;
+
+            const rect = cardCanvas.getBoundingClientRect();
+            const currentX = event.touches[0].clientX;
+            const currentY = event.touches[0].clientY;
+            const deltaX = currentX - lastMouseX;
+            const deltaY = currentY - lastMouseY;
+
+            const currentImageAreaHeight = cardCanvas.height - (mainContentPadding * 2 * (cardCanvas.height / cardHeight)) - (bottomTextMargin * (cardCanvas.height / cardHeight)) - (bottomTextAreaHeight * (cardCanvas.height / cardHeight));
+
+            const imgAspectRatio = uploadedImage.width / uploadedImage.height;
+            const areaAspectRatio = cardCanvas.width / currentImageAreaHeight;
+
+            if (imgAspectRatio > areaAspectRatio) {
+                // Image is wider than the area: enable horizontal drag
+                const sWidthNeeded = uploadedImage.height * areaAspectRatio;
+                const maxHorizontalScroll = uploadedImage.width - sWidthNeeded;
+                const scaleXToSource = uploadedImage.width / cardCanvas.width;
+                imageOffsetX = Math.max(0, Math.min(imageOffsetX - (deltaX * scaleXToSource), maxHorizontalScroll));
+                imageOffsetY = 0;
+            } else {
+                // Image is taller or same aspect ratio: enable vertical drag
+                const sHeightNeeded = uploadedImage.width / areaAspectRatio;
+                const maxVerticalScroll = uploadedImage.height - sHeightNeeded;
+                const scaleYToSource = uploadedImage.height / currentImageAreaHeight;
+                imageOffsetY = Math.max(0, Math.min(imageOffsetY - (deltaY * scaleYToSource), maxVerticalScroll));
+                imageOffsetX = 0;
+            }
+
+            lastMouseX = currentX;
+            lastMouseY = currentY;
+            drawCardContent(ctx, cardCanvas);
+            event.preventDefault(); // Prevent scrolling
+        }
+
+        function handleTouchEnd() {
+            isDragging = false;
+            cardCanvas.classList.remove('dragging');
+        }
+
+        // Functions to add/remove dragging listeners
+        function addDraggingListeners() {
+            cardCanvas.addEventListener('mousedown', handleMouseDown);
+            cardCanvas.addEventListener('mousemove', handleMouseMove);
+            cardCanvas.addEventListener('mouseup', handleMouseUp);
+            cardCanvas.addEventListener('mouseleave', handleMouseUp); // End drag if mouse leaves canvas
+
+            cardCanvas.addEventListener('touchstart', handleTouchStart);
+            cardCanvas.addEventListener('touchmove', handleTouchMove);
+            cardCanvas.addEventListener('touchend', handleTouchEnd);
+            cardCanvas.addEventListener('touchcancel', handleTouchEnd); // End touch if cancelled
+        }
+
+        function removeDraggingListeners() {
+            cardCanvas.removeEventListener('mousedown', handleMouseDown);
+            cardCanvas.removeEventListener('mousemove', handleMouseMove);
+            cardCanvas.removeEventListener('mouseup', handleMouseUp);
+            cardCanvas.removeEventListener('mouseleave', handleMouseUp);
+
+            cardCanvas.removeEventListener('touchstart', handleTouchStart);
+            cardCanvas.removeEventListener('touchmove', handleTouchMove);
+            cardCanvas.removeEventListener('touchend', handleTouchEnd);
+            cardCanvas.removeEventListener('touchcancel', handleTouchEnd);
+        }
+
+        // Initially add dragging listeners
+        addDraggingListeners();
+
+
+        /**
+         * Draws the card content onto a given canvas context.
+         * This function is now reusable for both display and high-res download.
+         * @param {CanvasRenderingContext2D} currentCtx - The context to draw on.
+         * @param {HTMLCanvasElement} currentCanvas - The canvas element.
+         * @param {boolean} isHighRes - True if drawing for high resolution download.
+         */
+        function drawCardContent(currentCtx, currentCanvas, isHighRes = false) {
+            const scaleFactor = isHighRes ? (currentCanvas.width / cardWidth) : 1;
+
+            // Adjust layout constants for the current scale
+            const scaledMainContentPadding = mainContentPadding * scaleFactor;
+            const scaledTitleTextTopMargin = titleTextTopMargin * scaleFactor;
+            const scaledBottomTextMargin = bottomTextMargin * scaleFactor;
+            const scaledBottomTextAreaHeight = bottomTextAreaHeight * scaleFactor;
+            const scaledBottomTextBoxRadius = bottomTextBoxRadius * scaleFactor;
+            const scaledBottomInfoTextOffset = bottomInfoTextOffset * scaleFactor;
+
+            const currentCardWidth = currentCanvas.width;
+            const currentCardHeight = currentCanvas.height;
+
+            // Clear canvas before drawing
+            currentCtx.clearRect(0, 0, currentCardWidth, currentCardHeight);
+
+            // --- Main Card Background (Border Color + Texture) ---
+            currentCtx.fillStyle = borderColorInput.value;
+            roundRectComplex(currentCtx, 0, 0, currentCardWidth, currentCardHeight, cardCornerRadius * scaleFactor);
+            currentCtx.fill();
+
+            // Apply the pre-created subtle texture pattern
+            currentCtx.fillStyle = subtleTexturePattern;
+            roundRectComplex(currentCtx, 0, 0, currentCardWidth, currentCardHeight, cardCornerRadius * scaleFactor);
+            currentCtx.fill(); // Fill again with pattern
+
+            // --- Calculate positions for bottom text box and image ---
+            const textBoxX = 0; // Full card width
+            const textBoxWidth = currentCardWidth; // Full card width
+            const textBoxY = currentCardHeight - scaledMainContentPadding - scaledBottomTextMargin - scaledBottomTextAreaHeight;
+
+            const imageAreaX = 0; // Image starts at the very left edge of the card
+            const imageAreaY = 0; // Image starts at the very top edge of the card
+            const imageAreaWidth = currentCardWidth; // Image fills full width of the card
+            const imageAreaHeight = textBoxY; // Image extends down to the top of the bottom text box
+
+            // --- Draw Image (Full Bleed, Fill and Crop) ---
+            if (uploadedImage) {
+                const imgAspectRatio = uploadedImage.width / uploadedImage.height;
+                const areaAspectRatio = imageAreaWidth / imageAreaHeight;
+
+                let sx, sy, sWidth, sHeight; // Source (cropped) rectangle on the original image
+                let dx, dy, dWidth, dHeight; // Destination rectangle on the canvas
+
+                // Destination is the full image area
+                dx = imageAreaX;
+                dy = imageAreaY;
+                dWidth = imageAreaWidth;
+                dHeight = imageAreaHeight;
+
+                if (imgAspectRatio > areaAspectRatio) {
+                    // Image is wider than the area: fill height, crop horizontally.
+                    sHeight = uploadedImage.height;
+                    sWidth = sHeight * areaAspectRatio;
+                    sy = 0; // No vertical cropping from source
+                    sx = imageOffsetX; // Use stored horizontal offset
+                } else {
+                    // Image is taller or same aspect ratio as area: fill width, crop vertically.
+                    sWidth = uploadedImage.width;
+                    sHeight = sWidth / areaAspectRatio;
+                    sx = 0; // No horizontal cropping from source
+                    sy = imageOffsetY; // Use stored vertical offset
+                }
+
+                currentCtx.drawImage(uploadedImage, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
+            }
+
+            // --- Draw Title Text (directly over image) ---
+            const titleTextMaxWidth = currentCardWidth - (scaledMainContentPadding * 2); // Max width for title text
+            const optimalTitleFontSize = fitTextToWidth(currentCtx, cardTitleInput.value, titleTextMaxWidth, maxTitleFontSize * scaleFactor, "Merriweather");
+
+            currentCtx.font = `bold ${optimalTitleFontSize}px "Merriweather", serif`;
+            currentCtx.fillStyle = cardTitleColorInput.value; // Use color from picker
+            currentCtx.textAlign = 'center';
+            currentCtx.textBaseline = 'middle';
+            currentCtx.fillText(cardTitleInput.value, currentCardWidth / 2, scaledTitleTextTopMargin);
+
+            // --- Draw Bottom Text Box ---
+            const bottomBoxBackgroundColor = darkenColor(borderColorInput.value, 15);
+            currentCtx.fillStyle = bottomBoxBackgroundColor;
+            roundRectComplex(currentCtx, textBoxX, textBoxY, textBoxWidth, scaledBottomTextAreaHeight, { tl: 0, tr: 0, br: scaledBottomTextBoxRadius, bl: scaledBottomTextBoxRadius });
+            currentCtx.fill();
+
+            // --- Draw Bottom Text (main description) ---
+            const bottomTextContentWidth = textBoxWidth - (scaledMainContentPadding * 2); // Use mainContentPadding for inner text
+            const bottomTextContentHeight = scaledBottomTextAreaHeight - (scaledBottomInfoTextOffset * 2);
+            const bottomTextFontFace = "Open Sans";
+            const initialBottomFontSize = 16 * scaleFactor;
+
+            const bottomTextFitResult = fitTextToBox(currentCtx, bottomTextInput.value, bottomTextContentWidth, bottomTextContentHeight, initialBottomFontSize, bottomTextFontFace);
+
+            currentCtx.font = `${bottomTextFitResult.fontSize}px "${bottomTextFontFace}"`;
+            currentCtx.fillStyle = getContrastColor(bottomBoxBackgroundColor);
+            currentCtx.textAlign = 'center';
+            currentCtx.textBaseline = 'top';
+
+            let currentLineY = textBoxY + scaledBottomInfoTextOffset + (bottomTextContentHeight - bottomTextFitResult.totalHeight) / 2;
+
+            for (const line of bottomTextFitResult.lines) {
+                currentCtx.fillText(line, currentCardWidth / 2, currentLineY);
+                currentLineY += bottomTextFitResult.lineHeight;
+            }
+
+            // --- Draw "Zurry Cards" (bottom left, vertically centered in bottom border) ---
+            const smallTextColor = getContrastColor(borderColorInput.value);
+            currentCtx.font = `italic ${12 * scaleFactor}px "Open Sans", sans-serif`;
+            currentCtx.fillStyle = smallTextColor;
+            currentCtx.textAlign = 'left';
+            currentCtx.textBaseline = 'middle';
+            const bottomBorderAreaHeight = currentCardHeight - (textBoxY + scaledBottomTextAreaHeight);
+            const zurryCardsY = textBoxY + scaledBottomTextAreaHeight + (bottomBorderAreaHeight / 2);
+            currentCtx.fillText(zurryCardsTextInput.value, scaledMainContentPadding, zurryCardsY);
+
+            // --- Draw Card Series (bottom right, vertically centered in bottom border) ---
+            currentCtx.font = `italic ${14 * scaleFactor}px "Open Sans", sans-serif`;
+            currentCtx.fillStyle = smallTextColor;
+            currentCtx.textAlign = 'right';
+            currentCtx.textBaseline = 'middle';
+            const cardSeriesY = textBoxY + scaledBottomTextAreaHeight + (bottomBorderAreaHeight / 2);
+            currentCtx.fillText(cardSeriesInput.value, currentCardWidth - scaledMainContentPadding, cardSeriesY);
+
+            if (!isHighRes) {
+                showMessage('Card generated successfully!', 'success');
+            }
+        }
+
+
+        /**
+         * Generates the trading card image on the canvas.
+         */
+        function generateCard() {
+            if (!uploadedImage) {
+                showMessage('Please select an image file first.', 'error');
+                return;
+            }
+            drawCardContent(ctx, cardCanvas);
+        }
+
+        /**
+         * Downloads the generated card as a PNG image in high resolution.
+         */
+        function downloadCard() {
+            if (!uploadedImage) {
+                showMessage('Please generate a card first.', 'error');
+                return;
+            }
+
+            // Create a temporary canvas for high-res rendering
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+
+            const scale = 3; // Increase for higher resolution
+            tempCanvas.width = cardWidth * scale;
+            tempCanvas.height = cardHeight * scale;
+
+            // Draw content onto the temporary canvas at high resolution
+            drawCardContent(tempCtx, tempCanvas, true);
+
+            const dataURL = tempCanvas.toDataURL('image/png');
+
+            const a = document.createElement('a');
+            a.href = dataURL;
+            a.download = 'trading_card.png'; // This attribute forces a download
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showMessage('Card downloaded!', 'success');
+        }
+    </script>
