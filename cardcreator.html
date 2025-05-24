@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trading Card Creator</title>
-    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Inter:wght@400;600&family=Open+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Inter:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
+            /* Set body font to Inter */
             font-family: "Inter", sans-serif;
             background-color: #f0f4f8;
             display: flex;
@@ -504,7 +505,7 @@
          * @param {number} boxWidth - The width of the bounding box.
          * @param {number} boxHeight - The height of the bounding box.
          * @param {number} initialFontSize - The starting font size.
-         * @param {string} fontFace - The font family string (e.g., "Open Sans").
+         * @param {string} fontFace - The font family string (e.g., "Inter").
          * @returns {object} An object with optimal fontSize, wrapped lines, and lineHeight.
          */
         function fitTextToBox(ctx, text, boxWidth, boxHeight, initialFontSize, fontFace) {
@@ -671,6 +672,12 @@
                 currentImageAreaHeight = currentCardHeight - scaledSignatureSeriesAreaHeight - scaledMarginBetweenImageAndDescription;
             }
 
+            // Safety check: Ensure imageAreaHeight is positive before division
+            if (currentImageAreaHeight <= 0) {
+                console.warn("Calculated currentImageAreaHeight is non-positive (" + currentImageAreaHeight + "). Setting to minimum 1 to prevent division by zero.");
+                currentImageAreaHeight = 1; // Set to a small positive value to prevent errors
+            }
+
             const imgAspectRatio = uploadedImage.width / uploadedImage.height;
             const areaAspectRatio = currentCardWidth / currentImageAreaHeight;
 
@@ -680,22 +687,22 @@
                 // Image is wider than the area: fill height, crop horizontally.
                 sHeight = uploadedImage.height;
                 sWidth = sHeight * areaAspectRatio;
-                const scaleXToSource = uploadedImage.width / currentCardWidth; // Scaling factor for X
+                const scaleXToSource = uploadedImage.width / currentCardWidth;
                 imageOffsetX = Math.max(0, Math.min(imageOffsetX - (deltaX * scaleXToSource), uploadedImage.width - sWidth));
-                imageOffsetY = 0; // Vertical offset is irrelevant for horizontal drag
+                imageOffsetY = 0;
             } else {
-                // Image is taller or same aspect ratio: fill width, crop vertically.
+                // Image is taller or same aspect ratio: enable vertical drag
                 sWidth = uploadedImage.width;
                 sHeight = sWidth / areaAspectRatio;
-                const scaleYToSource = uploadedImage.height / currentImageAreaHeight; // Scaling factor for Y
+                const scaleYToSource = uploadedImage.height / currentImageAreaHeight;
                 imageOffsetY = Math.max(0, Math.min(imageOffsetY - (deltaY * scaleYToSource), uploadedImage.height - sHeight));
-                imageOffsetX = 0; // Horizontal offset is irrelevant for vertical drag
+                imageOffsetX = 0;
             }
 
             lastMouseX = currentX;
             lastMouseY = currentY;
-            drawCardContent(ctx, cardCanvas); // Redraw the card
-            event.preventDefault(); // Prevent default browser dragging behavior
+            drawCardContent(ctx, cardCanvas);
+            event.preventDefault(); // Prevent scrolling
         }
 
         function handleMouseUp() {
@@ -739,6 +746,12 @@
                 currentImageAreaHeight = currentCardHeight - scaledSignatureSeriesAreaHeight - scaledMarginBetweenDescriptionAndSignature - scaledBottomTextAreaHeightForCalc - scaledMarginBetweenImageAndDescription;
             } else {
                 currentImageAreaHeight = currentCardHeight - scaledSignatureSeriesAreaHeight - scaledMarginBetweenImageAndDescription;
+            }
+
+            // Safety check: Ensure imageAreaHeight is positive before division
+            if (currentImageAreaHeight <= 0) {
+                console.warn("Calculated currentImageAreaHeight is non-positive (" + currentImageAreaHeight + "). Setting to minimum 1 to prevent division by zero.");
+                currentImageAreaHeight = 1; // Set to a small positive value to prevent errors
             }
 
             const imgAspectRatio = uploadedImage.width / uploadedImage.height;
@@ -826,6 +839,9 @@
             const currentCardWidth = currentCanvas.width;
             const currentCardHeight = currentCanvas.height;
 
+            // Clear canvas before drawing anything
+            currentCtx.clearRect(0, 0, currentCardWidth, currentCardHeight);
+
             // Determine if bottom text is present
             const hasBottomText = bottomTextInput.value.trim() !== '';
 
@@ -845,9 +861,14 @@
                 descriptionBoxY = currentCardHeight; // Effectively off-canvas, not drawn
             }
 
+            // Safety check: Ensure imageAreaHeight is positive before division
+            if (imageAreaHeight <= 0) {
+                console.warn("Calculated imageAreaHeight is non-positive (" + imageAreaHeight + "). Setting to minimum 1 to prevent division by zero.");
+                imageAreaHeight = 1; // Set to a small positive value to prevent errors
+            }
+            
+            const areaAspectRatio = currentCardWidth / imageAreaHeight;
 
-            // Clear canvas before drawing
-            currentCtx.clearRect(0, 0, currentCardWidth, currentCardHeight);
 
             // --- 1. Draw Main Card Background (Border Color + Texture) ---
             // This sets the base for the entire card.
@@ -863,7 +884,7 @@
             // --- 2. Draw Image (Full Bleed, Fill and Crop) ---
             if (uploadedImage) {
                 const imgAspectRatio = uploadedImage.width / uploadedImage.height;
-                const areaAspectRatio = currentCardWidth / imageAreaHeight; // Use the dynamically calculated imageAreaHeight
+                // const areaAspectRatio = currentCardWidth / imageAreaHeight; // This line was causing the error if imageAreaHeight was problematic
 
                 let sx, sy, sWidth, sHeight; // Source (cropped) rectangle on the original image
                 let dx, dy, dWidth, dHeight; // Destination rectangle on the canvas
@@ -928,7 +949,7 @@
                 // Description text content width is full width minus padding on both sides
                 const descriptionTextContentWidth = currentCardWidth - (bottomTextBoxPaddingScaled * 2);
                 const descriptionTextContentHeight = scaledBottomTextAreaHeight - (bottomInfoTextOffsetScaled * 2);
-                const bottomTextFontFace = "Open Sans";
+                const bottomTextFontFace = "Inter"; // Set description font to Inter
                 const initialBottomFontSize = 16 * scaleFactor;
 
                 const bottomTextFitResult = fitTextToBox(currentCtx, bottomTextInput.value, descriptionTextContentWidth, descriptionTextContentHeight, initialBottomFontSize, bottomTextFontFace);
@@ -956,13 +977,13 @@
             // Signature text position: centered vertically within its own area
             const signatureTextY = signatureAreaY + (scaledSignatureSeriesAreaHeight / 2);
 
-            currentCtx.font = `italic ${12 * scaleFactor}px "Open Sans", sans-serif`;
+            currentCtx.font = `italic ${12 * scaleFactor}px "Inter", sans-serif`; // Signature font is italic Inter
             currentCtx.fillStyle = signatureSeriesTextColor;
             currentCtx.textAlign = 'left';
             currentCtx.textBaseline = 'middle';
             currentCtx.fillText(signatureTextInput.value, scaledMainContentPadding, signatureTextY);
 
-            currentCtx.font = `italic ${14 * scaleFactor}px "Open Sans", sans-serif`; // Series text might be slightly larger
+            currentCtx.font = `italic ${14 * scaleFactor}px "Inter", sans-serif`; // Series text is italic Inter
             currentCtx.fillStyle = signatureSeriesTextColor;
             currentCtx.textAlign = 'right';
             currentCtx.textBaseline = 'middle';
