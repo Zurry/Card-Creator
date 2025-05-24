@@ -235,7 +235,7 @@
         const cardTitleColorInput = document.getElementById('cardTitleColor');
         const bottomTextInput = document.getElementById('bottomText');
         const signatureTextInput = document.getElementById('signatureText');
-        const cardSeriesInput = document.getElementById('cardSeries');
+        const cardSeriesInput = document.getElementById('cardSeries'); // This is the input field for the card series
         const cardCanvas = document.getElementById('cardCanvas');
         const ctx = cardCanvas.getContext('2d');
         const borderColorDisplay = document.getElementById('borderColorDisplay');
@@ -632,7 +632,7 @@
             const areaAspectRatio = cardCanvas.width / currentImageAreaHeight;
 
             if (imgAspectRatio > areaAspectRatio) {
-                // Image is wider than the area: enable horizontal drag
+                // Image is wider than the area: fill height, crop horizontally.
                 const sWidthNeeded = uploadedImage.height * areaAspectRatio;
                 const maxHorizontalScroll = uploadedImage.width - sWidthNeeded;
                 const scaleXToSource = uploadedImage.width / cardCanvas.width; // Scaling factor for X
@@ -906,23 +906,34 @@
 
             const dataURL = tempCanvas.toDataURL('image/png');
 
-            // --- Start of added/modified code for dynamic filename ---
-            let cardTitle = cardTitleInput.value.trim(); // Get the value from the cardTitle input field
+            // --- Start of modified code for dynamic filename (Series - Title) ---
+            let seriesName = cardSeriesInput.value.trim(); // Get the value from the cardSeries input field
+            let cardTitle = cardTitleInput.value.trim();   // Get the value from the cardTitle input field
 
-            // Sanitize the title for use as a filename
-            // This removes invalid characters and replaces spaces with underscores.
-            cardTitle = cardTitle.replace(/[^a-zA-Z0-9_\-]/g, '').replace(/\s+/g, '_');
+            // Sanitize both series and title for use as a filename
+            const sanitizeFilename = (text) => {
+                return text.replace(/[^a-zA-Z0-9_\-]/g, '').replace(/\s+/g, '_');
+            };
 
-            // Provide a default filename if the title is empty after sanitization
-            if (cardTitle === '') {
-                cardTitle = 'Untitled_Card';
+            seriesName = sanitizeFilename(seriesName);
+            cardTitle = sanitizeFilename(cardTitle);
+
+            let filename = '';
+            if (seriesName && cardTitle) {
+                filename = `${seriesName}-${cardTitle}`;
+            } else if (seriesName) {
+                filename = seriesName;
+            } else if (cardTitle) {
+                filename = cardTitle;
+            } else {
+                filename = 'Untitled_Card'; // Default if both are empty
             }
-            // --- End of added/modified code ---
+            // --- End of modified code ---
 
             const a = document.createElement('a');
             a.href = dataURL;
-            // Use the sanitized cardTitle variable for the download filename
-            a.download = `${cardTitle}.png`; // This attribute forces a download
+            // Use the combined and sanitized filename
+            a.download = `${filename}.png`; // This attribute forces a download
 
             document.body.appendChild(a);
             a.click();
