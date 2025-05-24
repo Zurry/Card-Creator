@@ -1,1 +1,2 @@
-[Launch Card Maker](zurry.github.io/card-creator){:target="_blank"}
+<div align="center">
+<h1><a href="https://zurry.github.io/card-creator/" target="_blank" rel="noopener noreferrer">Launch Card Creator</a></h1></div>
