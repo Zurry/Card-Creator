@@ -247,6 +247,7 @@
         let activeEyedropperTarget = null; // Stores the ID of the input to update
         let eyedropperListenerAdded = false; // Flag to manage eyedropper listeners
         let fontsAreLoaded = false; // New flag to track font loading status
+        let generateCardTimeout; // For debouncing
 
         // Image dragging state
         let isDragging = false;
@@ -309,12 +310,31 @@
         // Event listener for border color change
         borderColorInput.addEventListener('input', function() {
             borderColorDisplay.style.backgroundColor = this.value;
+            generateCardDebounced(); // Trigger debounced generate on color change
         });
 
         // Event listener for card title color change
         cardTitleColorInput.addEventListener('input', function() {
             cardTitleColorDisplay.style.backgroundColor = this.value;
+            generateCardDebounced(); // Trigger debounced generate on color change
         });
+
+        // Event listeners for text input changes (debounced)
+        cardTitleInput.addEventListener('input', generateCardDebounced);
+        bottomTextInput.addEventListener('input', generateCardDebounced);
+        signatureTextInput.addEventListener('input', generateCardDebounced);
+        cardSeriesInput.addEventListener('input', generateCardDebounced);
+
+        /**
+         * Debounces calls to generateCard to prevent rapid re-renders.
+         */
+        function generateCardDebounced() {
+            clearTimeout(generateCardTimeout);
+            generateCardTimeout = setTimeout(() => {
+                generateCard();
+            }, 100); // Wait 100ms after last input before generating
+        }
+
 
         /**
          * Displays a temporary message box.
@@ -916,13 +936,12 @@
                 currentCtx.font = `${bottomTextFitResult.fontSize}px "${bottomTextFontFace}"`;
                 currentCtx.fillStyle = getContrastColor(darkenColor(borderColorInput.value, 15)); // Text color for description box
                 currentCtx.textAlign = 'center';
-                currentCtx.textBaseline = 'middle'; // Changed to middle for better vertical centering
+                currentCtx.textBaseline = 'middle'; // Set to middle for better vertical centering
 
-                // Position the description text within its area, relative to descriptionBoxY
                 // Calculate the vertical center of the available text content height
                 let textBlockCenterY = descriptionBoxY + bottomInfoTextOffsetScaled + (descriptionTextContentHeight / 2);
                 
-                // Adjust starting Y for each line based on total text height and line height
+                // Adjust starting Y for each line based on total text height and line height, relative to the text block's center
                 let currentLineY = textBlockCenterY - (bottomTextFitResult.totalHeight / 2) + (bottomTextFitResult.lineHeight / 2);
 
                 for (let i = 0; i < bottomTextFitResult.lines.length; i++) {
@@ -968,11 +987,11 @@
                 // Only wait for fonts and set flag on first load
                 document.fonts.ready.then(() => {
                     fontsAreLoaded = true;
+                    // Draw content immediately, then again after a short delay
                     drawCardContent(ctx, cardCanvas);
-                    // Add a small timeout to re-draw, just in case fonts need a moment to fully render
                     setTimeout(() => {
                         drawCardContent(ctx, cardCanvas);
-                    }, 50); // Redraw after 50ms
+                    }, 50); // Small delay to ensure browser renders fonts correctly
                 }).catch(err => {
                     console.error("Font loading error:", err);
                     showMessage('Error loading fonts. Card might not display correctly.', 'error');
