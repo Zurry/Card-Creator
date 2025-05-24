@@ -231,7 +231,7 @@
     <script>
         const imageFile = document.getElementById('imageFile');
         const borderColorInput = document.getElementById('borderColor');
-        const cardTitleInput = document.getElementById('cardTitle');
+        const cardTitleInput = document.getElementById('cardTitle'); // This is the input field for the title
         const cardTitleColorInput = document.getElementById('cardTitleColor');
         const bottomTextInput = document.getElementById('bottomText');
         const signatureTextInput = document.getElementById('signatureText');
@@ -906,12 +906,29 @@
 
             const dataURL = tempCanvas.toDataURL('image/png');
 
+            // --- Start of added/modified code for dynamic filename ---
+            let cardTitle = cardTitleInput.value.trim(); // Get the value from the cardTitle input field
+
+            // Sanitize the title for use as a filename
+            // This removes invalid characters and replaces spaces with underscores.
+            cardTitle = cardTitle.replace(/[^a-zA-Z0-9_\-]/g, '').replace(/\s+/g, '_');
+
+            // Provide a default filename if the title is empty after sanitization
+            if (cardTitle === '') {
+                cardTitle = 'Untitled_Card';
+            }
+            // --- End of added/modified code ---
+
             const a = document.createElement('a');
             a.href = dataURL;
-            a.download = 'trading_card.png'; // This attribute forces a download
+            // Use the sanitized cardTitle variable for the download filename
+            a.download = `${cardTitle}.png`; // This attribute forces a download
+
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             showMessage('Card downloaded!', 'success');
         }
     </script>
+</body>
+</html>
