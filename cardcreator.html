@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trading Card Creator</title>
-    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Roboto+Condensed:wght@400;700&family=Inter:wght@400;600&family=Open+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Inter:wght@400;600&family=Open+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -246,6 +246,7 @@
         let subtleTexturePattern = null;
         let activeEyedropperTarget = null; // Stores the ID of the input to update
         let eyedropperListenerAdded = false; // Flag to manage eyedropper listeners
+        let fontsAreLoaded = false; // New flag to track font loading status
 
         // Image dragging state
         let isDragging = false;
@@ -262,13 +263,15 @@
         const titleTextTopMargin = 25; // Margin for title text from top of card
 
         // Constants for the optional bottom text box
-        const marginBetweenImageAndDescription = 0; // Set to 0 to remove space between image and description box
-        const bottomTextAreaHeight = 32; // Adjusted height for description text content area
-        const bottomTextBoxRadius = 8; // Rounded corners for bottom text box (not used for bottom corners of combined area)
-        const bottomInfoTextOffset = 8; // Vertical offset for text inside description text box (adjusted for centering)
+        const marginBetweenImageAndDescription = 0; // Set to 0 for no space between image and description box
+        const marginBetweenDescriptionAndSignature = 0; // Set to 0 for no space between description box and signature area
+        const bottomTextAreaHeight = 28; // Height for description text content area
+        const bottomTextBoxRadius = 8; // Rounded corners for the description box itself
+        const bottomTextBoxPadding = 10; // Padding inside description box for text
+        const bottomInfoTextOffset = 5; // Vertical offset for text inside description text box (adjusted for centering)
 
         // Constant for the fixed area at the very bottom (signature/series text)
-        const signatureSeriesAreaHeight = 16; // Reverted to original height as requested
+        const signatureSeriesAreaHeight = 20; // Increased height for signature area
 
 
         // Initialize color displays and texture pattern
@@ -289,7 +292,7 @@
                         imageOffsetX = 0;
                         imageOffsetY = 0;
                         showMessage('Image loaded successfully!', 'success');
-                        generateCard(); // Generate card with new image, which now waits for fonts
+                        generateCard(); // Generate card with new image
                     };
                     uploadedImage.onerror = function() {
                         showMessage('Error loading image. Please try another file.', 'error');
@@ -637,17 +640,15 @@
             const hasBottomText = bottomTextInput.value.trim() !== '';
             const scaledSignatureSeriesAreaHeight = signatureSeriesAreaHeight * (currentCardHeight / cardHeight);
             const scaledMarginBetweenImageAndDescription = marginBetweenImageAndDescription * (currentCardHeight / cardHeight);
+            const scaledMarginBetweenDescriptionAndSignature = marginBetweenDescriptionAndSignature * (currentCardHeight / cardHeight);
             const scaledBottomTextAreaHeightForCalc = bottomTextAreaHeight * (currentCardHeight / cardHeight);
 
             let currentImageAreaHeight;
-            let totalBottomSectionHeight; // Height of the combined description + signature area if description is present
 
             if (hasBottomText) {
-                totalBottomSectionHeight = scaledBottomTextAreaHeightForCalc + scaledSignatureSeriesAreaHeight;
-                currentImageAreaHeight = currentCardHeight - totalBottomSectionHeight - scaledMarginBetweenImageAndDescription;
+                currentImageAreaHeight = currentCardHeight - scaledSignatureSeriesAreaHeight - scaledMarginBetweenDescriptionAndSignature - scaledBottomTextAreaHeightForCalc - scaledMarginBetweenImageAndDescription;
             } else {
-                totalBottomSectionHeight = scaledSignatureSeriesAreaHeight; // Only signature area
-                currentImageAreaHeight = currentCardHeight - totalBottomSectionHeight - scaledMarginBetweenImageAndDescription;
+                currentImageAreaHeight = currentCardHeight - scaledSignatureSeriesAreaHeight - scaledMarginBetweenImageAndDescription;
             }
 
             const imgAspectRatio = uploadedImage.width / uploadedImage.height;
@@ -709,17 +710,15 @@
             const hasBottomText = bottomTextInput.value.trim() !== '';
             const scaledSignatureSeriesAreaHeight = signatureSeriesAreaHeight * (currentCardHeight / cardHeight);
             const scaledMarginBetweenImageAndDescription = marginBetweenImageAndDescription * (currentCardHeight / cardHeight);
+            const scaledMarginBetweenDescriptionAndSignature = marginBetweenDescriptionAndSignature * (currentCardHeight / cardHeight);
             const scaledBottomTextAreaHeightForCalc = bottomTextAreaHeight * (currentCardHeight / cardHeight);
 
             let currentImageAreaHeight;
-            let totalBottomSectionHeight; // Height of the combined description + signature area if description is present
 
             if (hasBottomText) {
-                totalBottomSectionHeight = scaledBottomTextAreaHeightForCalc + scaledSignatureSeriesAreaHeight;
-                currentImageAreaHeight = currentCardHeight - totalBottomSectionHeight - scaledMarginBetweenImageAndDescription;
+                currentImageAreaHeight = currentCardHeight - scaledSignatureSeriesAreaHeight - scaledMarginBetweenDescriptionAndSignature - scaledBottomTextAreaHeightForCalc - scaledMarginBetweenImageAndDescription;
             } else {
-                totalBottomSectionHeight = scaledSignatureSeriesAreaHeight; // Only signature area
-                currentImageAreaHeight = currentCardHeight - totalBottomSectionHeight - scaledMarginBetweenImageAndDescription;
+                currentImageAreaHeight = currentCardHeight - scaledSignatureSeriesAreaHeight - scaledMarginBetweenImageAndDescription;
             }
 
             const imgAspectRatio = uploadedImage.width / uploadedImage.height;
@@ -797,7 +796,10 @@
             const scaledMainContentPadding = mainContentPadding * scaleFactor;
             const scaledTitleTextTopMargin = titleTextTopMargin * scaleFactor;
             const scaledMarginBetweenImageAndDescription = marginBetweenImageAndDescription * scaleFactor;
+            const scaledMarginBetweenDescriptionAndSignature = marginBetweenDescriptionAndSignature * scaleFactor;
             const scaledBottomTextAreaHeight = bottomTextAreaHeight * scaleFactor;
+            const bottomTextBoxPaddingScaled = bottomTextBoxPadding * scaleFactor;
+            const scaledBottomTextBoxRadius = bottomTextBoxRadius * scaleFactor;
             const bottomInfoTextOffsetScaled = bottomInfoTextOffset * scaleFactor;
             const scaledSignatureSeriesAreaHeight = signatureSeriesAreaHeight * scaleFactor;
 
@@ -809,19 +811,18 @@
 
             let imageAreaHeight;
             let descriptionBoxY; // Y position where the description text box starts
-            let signatureAreaY; // Y position where the signature text area starts
-
-            // Signature area is always at the very bottom
-            signatureAreaY = currentCardHeight - scaledSignatureSeriesAreaHeight;
+            
+            // Signature area is always at the very bottom with a fixed height
+            const signatureAreaY = currentCardHeight - scaledSignatureSeriesAreaHeight;
 
             if (hasBottomText) {
-                // If description is present, it sits directly above the signature area
-                descriptionBoxY = signatureAreaY - scaledBottomTextAreaHeight;
-                imageAreaHeight = descriptionBoxY - scaledMarginBetweenImageAndDescription;
+                // Description box sits directly above the signature area with no margin
+                descriptionBoxY = signatureAreaY - scaledMarginBetweenDescriptionAndSignature - scaledBottomTextAreaHeight;
+                imageAreaHeight = descriptionBoxY - scaledMarginBetweenImageAndDescription; // Image area ends above description box
             } else {
-                // If no description, image area extends directly to the signature area
+                // If no description, image area extends directly to the signature area with no margin
                 imageAreaHeight = signatureAreaY - scaledMarginBetweenImageAndDescription;
-                descriptionBoxY = currentCardHeight; // Effectively off-canvas
+                descriptionBoxY = currentCardHeight; // Effectively off-canvas, not drawn
             }
 
 
@@ -829,7 +830,7 @@
             currentCtx.clearRect(0, 0, currentCardWidth, currentCardHeight);
 
             // --- 1. Draw Main Card Background (Border Color + Texture) ---
-            // This covers the entire card, including the area where the description box might be.
+            // This sets the base for the entire card.
             currentCtx.fillStyle = borderColorInput.value;
             roundRectComplex(currentCtx, 0, 0, currentCardWidth, currentCardHeight, cardCornerRadius * scaleFactor);
             currentCtx.fill();
@@ -880,23 +881,23 @@
             currentCtx.textBaseline = 'middle';
             currentCtx.fillText(cardTitleInput.value, currentCardWidth / 2, scaledTitleTextTopMargin);
 
-            // --- 4. Draw Description Box Background (Conditional - SOLID color, NO texture) ---
+            // --- 4. Draw Description Box Background (Conditional - SOLID color, full width, flat top, rounded bottom) ---
             if (hasBottomText) {
                 const descriptionBoxBackgroundColor = darkenColor(borderColorInput.value, 15);
                 currentCtx.fillStyle = descriptionBoxBackgroundColor; // Set to solid color
-                // Draw description box, ensuring its bottom aligns with signatureAreaY
-                roundRectComplex(currentCtx, 0, descriptionBoxY, currentCardWidth, scaledBottomTextAreaHeight, { tl: 0, tr: 0, br: 0, bl: 0 });
+                // Draw description box, full width, with flat top and rounded bottom corners
+                roundRectComplex(currentCtx, 0, descriptionBoxY, currentCardWidth, scaledBottomTextAreaHeight, { tl: 0, tr: 0, br: scaledBottomTextBoxRadius, bl: scaledBottomTextBoxRadius });
                 currentCtx.fill();
                 // No texture fill here for the description box, it should be solid
             }
 
             // --- 5. Draw Signature Area Background (Always present - with texture and rounded bottom corners) ---
-            // This is drawn *after* the description box, so if description is present, it will draw on top of the description box's bottom edge.
+            // This is drawn full width and handles the card's overall bottom rounded corners.
+            // It is drawn *after* the description box so it layers correctly.
             currentCtx.fillStyle = borderColorInput.value; // Main card border color
             roundRectComplex(currentCtx, 0, signatureAreaY, currentCardWidth, scaledSignatureSeriesAreaHeight, { tl: 0, tr: 0, br: cardCornerRadius * scaleFactor, bl: cardCornerRadius * scaleFactor });
             currentCtx.fill();
 
-            // Apply texture to signature area
             currentCtx.fillStyle = subtleTexturePattern;
             roundRectComplex(currentCtx, 0, signatureAreaY, currentCardWidth, scaledSignatureSeriesAreaHeight, { tl: 0, tr: 0, br: cardCornerRadius * scaleFactor, bl: cardCornerRadius * scaleFactor });
             currentCtx.fill();
@@ -904,7 +905,8 @@
 
             // --- 6. Draw Description Text (Conditional) ---
             if (hasBottomText) {
-                const descriptionTextContentWidth = currentCardWidth - (scaledMainContentPadding * 2);
+                // Description text content width is full width minus padding on both sides
+                const descriptionTextContentWidth = currentCardWidth - (bottomTextBoxPaddingScaled * 2);
                 const descriptionTextContentHeight = scaledBottomTextAreaHeight - (bottomInfoTextOffsetScaled * 2);
                 const bottomTextFontFace = "Open Sans";
                 const initialBottomFontSize = 16 * scaleFactor;
@@ -914,13 +916,17 @@
                 currentCtx.font = `${bottomTextFitResult.fontSize}px "${bottomTextFontFace}"`;
                 currentCtx.fillStyle = getContrastColor(darkenColor(borderColorInput.value, 15)); // Text color for description box
                 currentCtx.textAlign = 'center';
-                currentCtx.textBaseline = 'top';
+                currentCtx.textBaseline = 'middle'; // Changed to middle for better vertical centering
 
-                let currentLineY = descriptionBoxY + bottomInfoTextOffsetScaled + (descriptionTextContentHeight - bottomTextFitResult.totalHeight) / 2;
+                // Position the description text within its area, relative to descriptionBoxY
+                // Calculate the vertical center of the available text content height
+                let textBlockCenterY = descriptionBoxY + bottomInfoTextOffsetScaled + (descriptionTextContentHeight / 2);
+                
+                // Adjust starting Y for each line based on total text height and line height
+                let currentLineY = textBlockCenterY - (bottomTextFitResult.totalHeight / 2) + (bottomTextFitResult.lineHeight / 2);
 
-                for (const line of bottomTextFitResult.lines) {
-                    currentCtx.fillText(line, currentCardWidth / 2, currentLineY);
-                    currentLineY += bottomTextFitResult.lineHeight;
+                for (let i = 0; i < bottomTextFitResult.lines.length; i++) {
+                    currentCtx.fillText(bottomTextFitResult.lines[i], currentCardWidth / 2, currentLineY + (i * bottomTextFitResult.lineHeight)); // Text is centered horizontally
                 }
             }
 
@@ -957,18 +963,25 @@
                 showMessage('Please select an image file first.', 'error');
                 return;
             }
-            // Ensure fonts are loaded before drawing to prevent initial render issues
-            document.fonts.ready.then(() => {
-                drawCardContent(ctx, cardCanvas);
-                // Add a small timeout to re-draw, just in case fonts need a moment to fully render
-                setTimeout(() => {
+
+            if (!fontsAreLoaded) {
+                // Only wait for fonts and set flag on first load
+                document.fonts.ready.then(() => {
+                    fontsAreLoaded = true;
                     drawCardContent(ctx, cardCanvas);
-                }, 50); // Redraw after 50ms
-            }).catch(err => {
-                console.error("Font loading error:", err);
-                showMessage('Error loading fonts. Card might not display correctly.', 'error');
-                drawCardContent(ctx, cardCanvas); // Still attempt to draw even if fonts fail
-            });
+                    // Add a small timeout to re-draw, just in case fonts need a moment to fully render
+                    setTimeout(() => {
+                        drawCardContent(ctx, cardCanvas);
+                    }, 50); // Redraw after 50ms
+                }).catch(err => {
+                    console.error("Font loading error:", err);
+                    showMessage('Error loading fonts. Card might not display correctly.', 'error');
+                    drawCardContent(ctx, cardCanvas); // Still attempt to draw even if fonts fail
+                });
+            } else {
+                // If fonts are already loaded, just draw directly
+                drawCardContent(ctx, cardCanvas);
+            }
         }
 
         /**
