@@ -258,13 +258,17 @@
         const cardWidth = 350; // Base width for the card
         const cardHeight = cardWidth / 0.714; // Calculate height based on ratio
         const cardCornerRadius = 12; // Matches CSS border-radius
-        const mainContentPadding = 4; // Padding from the outer edge of the card
+        const mainContentPadding = 4; // Padding from the outer edge of the card (used for horizontal padding)
         const titleTextTopMargin = 25; // Margin for title text from top of card
-        const bottomTextMargin = 15; // Increased margin from the bottom of the card for the main text box
-        const bottomTextAreaHeight = 35; // Fixed height for bottom text box
-        const bottomTextBoxRadius = 8; // Rounded corners for bottom text box
-        const bottomInfoTextOffset = 5; // Offset for Signature and series text from the very bottom edge
-        const maxTitleFontSize = 32; // Maximum font size for the title
+
+        // Constants for the optional bottom text box
+        const marginBetweenImageAndDescription = 0; // Set to 0 to remove space between image and description box
+        const bottomTextAreaHeight = 40; // Adjusted height for description text content area
+        const bottomTextBoxRadius = 8; // Rounded corners for bottom text box (not used for bottom corners of combined area)
+        const bottomInfoTextOffset = 8; // Vertical offset for text inside description text box (adjusted for centering)
+
+        // Constant for the fixed area at the very bottom (signature/series text)
+        const signatureSeriesAreaHeight = 16; // Reverted to original height as requested
 
 
         // Initialize color displays and texture pattern
@@ -285,7 +289,7 @@
                         imageOffsetX = 0;
                         imageOffsetY = 0;
                         showMessage('Image loaded successfully!', 'success');
-                        generateCard(); // Generate card with new image
+                        generateCard(); // Generate card with new image, which now waits for fonts
                     };
                     uploadedImage.onerror = function() {
                         showMessage('Error loading image. Please try another file.', 'error');
@@ -625,25 +629,45 @@
             const deltaX = currentX - lastMouseX;
             const deltaY = currentY - lastMouseY;
 
-            // Calculate imageAreaHeight for the current canvas (not scaled)
-            const currentImageAreaHeight = cardCanvas.height - (mainContentPadding * 2 * (cardCanvas.height / cardHeight)) - (bottomTextMargin * (cardCanvas.height / cardHeight)) - (bottomTextAreaHeight * (cardCanvas.height / cardHeight));
+            // Define currentCardWidth and currentCardHeight within this scope
+            const currentCardWidth = cardCanvas.width;
+            const currentCardHeight = cardCanvas.height;
+
+            // Calculate imageAreaHeight dynamically based on the presence of the bottom text box
+            const hasBottomText = bottomTextInput.value.trim() !== '';
+            const scaledSignatureSeriesAreaHeight = signatureSeriesAreaHeight * (currentCardHeight / cardHeight);
+            const scaledMarginBetweenImageAndDescription = marginBetweenImageAndDescription * (currentCardHeight / cardHeight);
+            const scaledBottomTextAreaHeightForCalc = bottomTextAreaHeight * (currentCardHeight / cardHeight);
+
+            let currentImageAreaHeight;
+            let totalBottomSectionHeight; // Height of the combined description + signature area if description is present
+
+            if (hasBottomText) {
+                totalBottomSectionHeight = scaledBottomTextAreaHeightForCalc + scaledSignatureSeriesAreaHeight;
+                currentImageAreaHeight = currentCardHeight - totalBottomSectionHeight - scaledMarginBetweenImageAndDescription;
+            } else {
+                totalBottomSectionHeight = scaledSignatureSeriesAreaHeight; // Only signature area
+                currentImageAreaHeight = currentCardHeight - totalBottomSectionHeight - scaledMarginBetweenImageAndDescription;
+            }
 
             const imgAspectRatio = uploadedImage.width / uploadedImage.height;
-            const areaAspectRatio = cardCanvas.width / currentImageAreaHeight;
+            const areaAspectRatio = currentCardWidth / currentImageAreaHeight;
+
+            let sx, sy, sWidth, sHeight; // Declare variables here
 
             if (imgAspectRatio > areaAspectRatio) {
                 // Image is wider than the area: fill height, crop horizontally.
-                const sWidthNeeded = uploadedImage.height * areaAspectRatio;
-                const maxHorizontalScroll = uploadedImage.width - sWidthNeeded;
-                const scaleXToSource = uploadedImage.width / cardCanvas.width; // Scaling factor for X
-                imageOffsetX = Math.max(0, Math.min(imageOffsetX - (deltaX * scaleXToSource), maxHorizontalScroll));
+                sHeight = uploadedImage.height;
+                sWidth = sHeight * areaAspectRatio;
+                const scaleXToSource = uploadedImage.width / currentCardWidth; // Scaling factor for X
+                imageOffsetX = Math.max(0, Math.min(imageOffsetX - (deltaX * scaleXToSource), uploadedImage.width - sWidth));
                 imageOffsetY = 0; // Vertical offset is irrelevant for horizontal drag
             } else {
-                // Image is taller or same aspect ratio: enable vertical drag
-                const sHeightNeeded = uploadedImage.width / areaAspectRatio;
-                const maxVerticalScroll = uploadedImage.height - sHeightNeeded;
+                // Image is taller or same aspect ratio: fill width, crop vertically.
+                sWidth = uploadedImage.width;
+                sHeight = sWidth / areaAspectRatio;
                 const scaleYToSource = uploadedImage.height / currentImageAreaHeight; // Scaling factor for Y
-                imageOffsetY = Math.max(0, Math.min(imageOffsetY - (deltaY * scaleYToSource), maxVerticalScroll));
+                imageOffsetY = Math.max(0, Math.min(imageOffsetY - (deltaY * scaleYToSource), uploadedImage.height - sHeight));
                 imageOffsetX = 0; // Horizontal offset is irrelevant for vertical drag
             }
 
@@ -677,24 +701,45 @@
             const deltaX = currentX - lastMouseX;
             const deltaY = currentY - lastMouseY;
 
-            const currentImageAreaHeight = cardCanvas.height - (mainContentPadding * 2 * (cardCanvas.height / cardHeight)) - (bottomTextMargin * (cardCanvas.height / cardHeight)) - (bottomTextAreaHeight * (cardCanvas.height / cardHeight));
+            // Define currentCardWidth and currentCardHeight within this scope
+            const currentCardWidth = cardCanvas.width;
+            const currentCardHeight = cardCanvas.height;
+
+            // Calculate imageAreaHeight dynamically based on the presence of the bottom text box
+            const hasBottomText = bottomTextInput.value.trim() !== '';
+            const scaledSignatureSeriesAreaHeight = signatureSeriesAreaHeight * (currentCardHeight / cardHeight);
+            const scaledMarginBetweenImageAndDescription = marginBetweenImageAndDescription * (currentCardHeight / cardHeight);
+            const scaledBottomTextAreaHeightForCalc = bottomTextAreaHeight * (currentCardHeight / cardHeight);
+
+            let currentImageAreaHeight;
+            let totalBottomSectionHeight; // Height of the combined description + signature area if description is present
+
+            if (hasBottomText) {
+                totalBottomSectionHeight = scaledBottomTextAreaHeightForCalc + scaledSignatureSeriesAreaHeight;
+                currentImageAreaHeight = currentCardHeight - totalBottomSectionHeight - scaledMarginBetweenImageAndDescription;
+            } else {
+                totalBottomSectionHeight = scaledSignatureSeriesAreaHeight; // Only signature area
+                currentImageAreaHeight = currentCardHeight - totalBottomSectionHeight - scaledMarginBetweenImageAndDescription;
+            }
 
             const imgAspectRatio = uploadedImage.width / uploadedImage.height;
-            const areaAspectRatio = cardCanvas.width / currentImageAreaHeight;
+            const areaAspectRatio = currentCardWidth / currentImageAreaHeight;
+
+            let sx, sy, sWidth, sHeight; // Declare variables here
 
             if (imgAspectRatio > areaAspectRatio) {
-                // Image is wider than the area: enable horizontal drag
-                const sWidthNeeded = uploadedImage.height * areaAspectRatio;
-                const maxHorizontalScroll = uploadedImage.width - sWidthNeeded;
-                const scaleXToSource = uploadedImage.width / cardCanvas.width;
-                imageOffsetX = Math.max(0, Math.min(imageOffsetX - (deltaX * scaleXToSource), maxHorizontalScroll));
+                // Image is wider than the area: fill height, crop horizontally.
+                sHeight = uploadedImage.height;
+                sWidth = sHeight * areaAspectRatio;
+                const scaleXToSource = uploadedImage.width / currentCardWidth;
+                imageOffsetX = Math.max(0, Math.min(imageOffsetX - (deltaX * scaleXToSource), uploadedImage.width - sWidth));
                 imageOffsetY = 0;
             } else {
                 // Image is taller or same aspect ratio: enable vertical drag
-                const sHeightNeeded = uploadedImage.width / areaAspectRatio;
-                const maxVerticalScroll = uploadedImage.height - sHeightNeeded;
+                sWidth = uploadedImage.width;
+                sHeight = sWidth / areaAspectRatio;
                 const scaleYToSource = uploadedImage.height / currentImageAreaHeight;
-                imageOffsetY = Math.max(0, Math.min(imageOffsetY - (deltaY * scaleYToSource), maxVerticalScroll));
+                imageOffsetY = Math.max(0, Math.min(imageOffsetY - (deltaY * scaleYToSource), uploadedImage.height - sHeight));
                 imageOffsetX = 0;
             }
 
@@ -748,53 +793,65 @@
         function drawCardContent(currentCtx, currentCanvas, isHighRes = false) {
             const scaleFactor = isHighRes ? (currentCanvas.width / cardWidth) : 1;
 
-            // Adjust layout constants for the current scale
+            // Scaled constants
             const scaledMainContentPadding = mainContentPadding * scaleFactor;
             const scaledTitleTextTopMargin = titleTextTopMargin * scaleFactor;
-            const scaledBottomTextMargin = bottomTextMargin * scaleFactor;
+            const scaledMarginBetweenImageAndDescription = marginBetweenImageAndDescription * scaleFactor;
             const scaledBottomTextAreaHeight = bottomTextAreaHeight * scaleFactor;
-            const scaledBottomTextBoxRadius = bottomTextBoxRadius * scaleFactor;
-            const scaledBottomInfoTextOffset = bottomInfoTextOffset * scaleFactor;
+            const bottomInfoTextOffsetScaled = bottomInfoTextOffset * scaleFactor;
+            const scaledSignatureSeriesAreaHeight = signatureSeriesAreaHeight * scaleFactor;
 
             const currentCardWidth = currentCanvas.width;
             const currentCardHeight = currentCanvas.height;
 
+            // Determine if bottom text is present
+            const hasBottomText = bottomTextInput.value.trim() !== '';
+
+            let imageAreaHeight;
+            let descriptionBoxY; // Y position where the description text box starts
+            let signatureAreaY; // Y position where the signature text area starts
+
+            // Signature area is always at the very bottom
+            signatureAreaY = currentCardHeight - scaledSignatureSeriesAreaHeight;
+
+            if (hasBottomText) {
+                // If description is present, it sits directly above the signature area
+                descriptionBoxY = signatureAreaY - scaledBottomTextAreaHeight;
+                imageAreaHeight = descriptionBoxY - scaledMarginBetweenImageAndDescription;
+            } else {
+                // If no description, image area extends directly to the signature area
+                imageAreaHeight = signatureAreaY - scaledMarginBetweenImageAndDescription;
+                descriptionBoxY = currentCardHeight; // Effectively off-canvas
+            }
+
+
             // Clear canvas before drawing
             currentCtx.clearRect(0, 0, currentCardWidth, currentCardHeight);
 
-            // --- Main Card Background (Border Color + Texture) ---
+            // --- 1. Draw Main Card Background (Border Color + Texture) ---
+            // This covers the entire card, including the area where the description box might be.
             currentCtx.fillStyle = borderColorInput.value;
             roundRectComplex(currentCtx, 0, 0, currentCardWidth, currentCardHeight, cardCornerRadius * scaleFactor);
             currentCtx.fill();
 
-            // Apply the pre-created subtle texture pattern
             currentCtx.fillStyle = subtleTexturePattern;
             roundRectComplex(currentCtx, 0, 0, currentCardWidth, currentCardHeight, cardCornerRadius * scaleFactor);
-            currentCtx.fill(); // Fill again with pattern
+            currentCtx.fill();
 
-            // --- Calculate positions for bottom text box and image ---
-            const textBoxX = 0; // Full card width
-            const textBoxWidth = currentCardWidth; // Full card width
-            const textBoxY = currentCardHeight - scaledMainContentPadding - scaledBottomTextMargin - scaledBottomTextAreaHeight;
 
-            const imageAreaX = 0; // Image starts at the very left edge of the card
-            const imageAreaY = 0; // Image starts at the very top edge of the card
-            const imageAreaWidth = currentCardWidth; // Image fills full width of the card
-            const imageAreaHeight = textBoxY; // Image extends down to the top of the bottom text box
-
-            // --- Draw Image (Full Bleed, Fill and Crop) ---
+            // --- 2. Draw Image (Full Bleed, Fill and Crop) ---
             if (uploadedImage) {
                 const imgAspectRatio = uploadedImage.width / uploadedImage.height;
-                const areaAspectRatio = imageAreaWidth / imageAreaHeight;
+                const areaAspectRatio = currentCardWidth / imageAreaHeight; // Use the dynamically calculated imageAreaHeight
 
                 let sx, sy, sWidth, sHeight; // Source (cropped) rectangle on the original image
                 let dx, dy, dWidth, dHeight; // Destination rectangle on the canvas
 
                 // Destination is the full image area
-                dx = imageAreaX;
-                dy = imageAreaY;
-                dWidth = imageAreaWidth;
-                dHeight = imageAreaHeight;
+                dx = 0;
+                dy = 0;
+                dWidth = currentCardWidth;
+                dHeight = imageAreaHeight; // Use the dynamically calculated imageAreaHeight
 
                 if (imgAspectRatio > areaAspectRatio) {
                     // Image is wider than the area: fill height, crop horizontally.
@@ -803,7 +860,7 @@
                     sy = 0; // No vertical cropping from source
                     sx = imageOffsetX; // Use stored horizontal offset
                 } else {
-                    // Image is taller or same aspect ratio as area: fill width, crop vertically.
+                    // Image is taller or same aspect ratio: fill width, crop vertically.
                     sWidth = uploadedImage.width;
                     sHeight = sWidth / areaAspectRatio;
                     sx = 0; // No horizontal cropping from source
@@ -813,9 +870,9 @@
                 currentCtx.drawImage(uploadedImage, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
             }
 
-            // --- Draw Title Text (directly over image) ---
+            // --- 3. Draw Title Text (directly over image) ---
             const titleTextMaxWidth = currentCardWidth - (scaledMainContentPadding * 2); // Max width for title text
-            const optimalTitleFontSize = fitTextToWidth(currentCtx, cardTitleInput.value, titleTextMaxWidth, maxTitleFontSize * scaleFactor, "Merriweather");
+            const optimalTitleFontSize = fitTextToWidth(currentCtx, cardTitleInput.value, titleTextMaxWidth, 32 * scaleFactor, "Merriweather"); // Use 32 as initial max font size
 
             currentCtx.font = `bold ${optimalTitleFontSize}px "Merriweather", serif`;
             currentCtx.fillStyle = cardTitleColorInput.value; // Use color from picker
@@ -823,49 +880,68 @@
             currentCtx.textBaseline = 'middle';
             currentCtx.fillText(cardTitleInput.value, currentCardWidth / 2, scaledTitleTextTopMargin);
 
-            // --- Draw Bottom Text Box ---
-            const bottomBoxBackgroundColor = darkenColor(borderColorInput.value, 15);
-            currentCtx.fillStyle = bottomBoxBackgroundColor;
-            roundRectComplex(currentCtx, textBoxX, textBoxY, textBoxWidth, scaledBottomTextAreaHeight, { tl: 0, tr: 0, br: scaledBottomTextBoxRadius, bl: scaledBottomTextBoxRadius });
-            currentCtx.fill();
-
-            // --- Draw Bottom Text (main description) ---
-            const bottomTextContentWidth = textBoxWidth - (scaledMainContentPadding * 2); // Use mainContentPadding for inner text
-            const bottomTextContentHeight = scaledBottomTextAreaHeight - (scaledBottomInfoTextOffset * 2);
-            const bottomTextFontFace = "Open Sans";
-            const initialBottomFontSize = 16 * scaleFactor;
-
-            const bottomTextFitResult = fitTextToBox(currentCtx, bottomTextInput.value, bottomTextContentWidth, bottomTextContentHeight, initialBottomFontSize, bottomTextFontFace);
-
-            currentCtx.font = `${bottomTextFitResult.fontSize}px "${bottomTextFontFace}"`;
-            currentCtx.fillStyle = getContrastColor(bottomBoxBackgroundColor);
-            currentCtx.textAlign = 'center';
-            currentCtx.textBaseline = 'top';
-
-            let currentLineY = textBoxY + scaledBottomInfoTextOffset + (bottomTextContentHeight - bottomTextFitResult.totalHeight) / 2;
-
-            for (const line of bottomTextFitResult.lines) {
-                currentCtx.fillText(line, currentCardWidth / 2, currentLineY);
-                currentLineY += bottomTextFitResult.lineHeight;
+            // --- 4. Draw Description Box Background (Conditional - SOLID color, NO texture) ---
+            if (hasBottomText) {
+                const descriptionBoxBackgroundColor = darkenColor(borderColorInput.value, 15);
+                currentCtx.fillStyle = descriptionBoxBackgroundColor; // Set to solid color
+                // Draw description box, ensuring its bottom aligns with signatureAreaY
+                roundRectComplex(currentCtx, 0, descriptionBoxY, currentCardWidth, scaledBottomTextAreaHeight, { tl: 0, tr: 0, br: 0, bl: 0 });
+                currentCtx.fill();
+                // No texture fill here for the description box, it should be solid
             }
 
-            // --- Draw "Signature" (bottom left, vertically centered in bottom border) ---
-            const smallTextColor = getContrastColor(borderColorInput.value);
+            // --- 5. Draw Signature Area Background (Always present - with texture and rounded bottom corners) ---
+            // This is drawn *after* the description box, so if description is present, it will draw on top of the description box's bottom edge.
+            currentCtx.fillStyle = borderColorInput.value; // Main card border color
+            roundRectComplex(currentCtx, 0, signatureAreaY, currentCardWidth, scaledSignatureSeriesAreaHeight, { tl: 0, tr: 0, br: cardCornerRadius * scaleFactor, bl: cardCornerRadius * scaleFactor });
+            currentCtx.fill();
+
+            // Apply texture to signature area
+            currentCtx.fillStyle = subtleTexturePattern;
+            roundRectComplex(currentCtx, 0, signatureAreaY, currentCardWidth, scaledSignatureSeriesAreaHeight, { tl: 0, tr: 0, br: cardCornerRadius * scaleFactor, bl: cardCornerRadius * scaleFactor });
+            currentCtx.fill();
+
+
+            // --- 6. Draw Description Text (Conditional) ---
+            if (hasBottomText) {
+                const descriptionTextContentWidth = currentCardWidth - (scaledMainContentPadding * 2);
+                const descriptionTextContentHeight = scaledBottomTextAreaHeight - (bottomInfoTextOffsetScaled * 2);
+                const bottomTextFontFace = "Open Sans";
+                const initialBottomFontSize = 16 * scaleFactor;
+
+                const bottomTextFitResult = fitTextToBox(currentCtx, bottomTextInput.value, descriptionTextContentWidth, descriptionTextContentHeight, initialBottomFontSize, bottomTextFontFace);
+
+                currentCtx.font = `${bottomTextFitResult.fontSize}px "${bottomTextFontFace}"`;
+                currentCtx.fillStyle = getContrastColor(darkenColor(borderColorInput.value, 15)); // Text color for description box
+                currentCtx.textAlign = 'center';
+                currentCtx.textBaseline = 'top';
+
+                let currentLineY = descriptionBoxY + bottomInfoTextOffsetScaled + (descriptionTextContentHeight - bottomTextFitResult.totalHeight) / 2;
+
+                for (const line of bottomTextFitResult.lines) {
+                    currentCtx.fillText(line, currentCardWidth / 2, currentLineY);
+                    currentLineY += bottomTextFitResult.lineHeight;
+                }
+            }
+
+            // --- 7. Draw "Signature" (bottom left) and "Card Series" (bottom right) ---
+            // These will always be drawn at the bottom, regardless of bottom text box presence.
+            const signatureSeriesTextColor = getContrastColor(borderColorInput.value); // Text color for signature area
+
+            // Signature text position: centered vertically within its own area
+            const signatureTextY = signatureAreaY + (scaledSignatureSeriesAreaHeight / 2);
+
             currentCtx.font = `italic ${12 * scaleFactor}px "Open Sans", sans-serif`;
-            currentCtx.fillStyle = smallTextColor;
+            currentCtx.fillStyle = signatureSeriesTextColor;
             currentCtx.textAlign = 'left';
             currentCtx.textBaseline = 'middle';
-            const bottomBorderAreaHeight = currentCardHeight - (textBoxY + scaledBottomTextAreaHeight);
-            const signatureY = textBoxY + scaledBottomTextAreaHeight + (bottomBorderAreaHeight / 2);
-            currentCtx.fillText(signatureTextInput.value, scaledMainContentPadding, signatureY);
+            currentCtx.fillText(signatureTextInput.value, scaledMainContentPadding, signatureTextY);
 
-            // --- Draw Card Series (bottom right, vertically centered in bottom border) ---
-            currentCtx.font = `italic ${14 * scaleFactor}px "Open Sans", sans-serif`;
-            currentCtx.fillStyle = smallTextColor;
+            currentCtx.font = `italic ${14 * scaleFactor}px "Open Sans", sans-serif`; // Series text might be slightly larger
+            currentCtx.fillStyle = signatureSeriesTextColor;
             currentCtx.textAlign = 'right';
             currentCtx.textBaseline = 'middle';
-            const cardSeriesY = textBoxY + scaledBottomTextAreaHeight + (bottomBorderAreaHeight / 2);
-            currentCtx.fillText(cardSeriesInput.value, currentCardWidth - scaledMainContentPadding, cardSeriesY);
+            currentCtx.fillText(cardSeriesInput.value, currentCardWidth - scaledMainContentPadding, signatureTextY);
 
             if (!isHighRes) {
                 showMessage('Card generated successfully!', 'success');
@@ -881,7 +957,18 @@
                 showMessage('Please select an image file first.', 'error');
                 return;
             }
-            drawCardContent(ctx, cardCanvas);
+            // Ensure fonts are loaded before drawing to prevent initial render issues
+            document.fonts.ready.then(() => {
+                drawCardContent(ctx, cardCanvas);
+                // Add a small timeout to re-draw, just in case fonts need a moment to fully render
+                setTimeout(() => {
+                    drawCardContent(ctx, cardCanvas);
+                }, 50); // Redraw after 50ms
+            }).catch(err => {
+                console.error("Font loading error:", err);
+                showMessage('Error loading fonts. Card might not display correctly.', 'error');
+                drawCardContent(ctx, cardCanvas); // Still attempt to draw even if fonts fail
+            });
         }
 
         /**
