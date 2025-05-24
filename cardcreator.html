@@ -171,19 +171,6 @@
             </div>
 
             <div class="form-group">
-                <label for="borderColor" class="text-gray-700">Card Background Color:</label>
-                <div class="color-input-wrapper">
-                    <input type="color" id="borderColor" value="#A0AEC0" class="flex-grow">
-                    <div id="borderColorDisplay" class="color-display bg-gray-400 rounded-md shadow-sm"></div>
-                    <button type="button" class="btn btn-primary text-sm px-3 py-2 rounded-md" onclick="activateEyedropper('borderColor')">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M17.293 2.293a1 1 0 011.414 0l2 2a1 1 0 010 1.414l-14 14a1 1 0 01-1.414 0l-2-2a1 1 0 010-1.414l14-14zM12 14a2 2 0 100-4 2 2 0 000 4z"></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-
-            <div class="form-group">
                 <label for="cardTitle" class="text-gray-700">Card Title:</label>
                 <input type="text" id="cardTitle" placeholder="Enter card name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
             </div>
@@ -201,13 +188,26 @@
                 </div>
             </div>
 
+                        <div class="form-group">
+                <label for="borderColor" class="text-gray-700">Card Background Color:</label>
+                <div class="color-input-wrapper">
+                    <input type="color" id="borderColor" value="#A0AEC0" class="flex-grow">
+                    <div id="borderColorDisplay" class="color-display bg-gray-400 rounded-md shadow-sm"></div>
+                    <button type="button" class="btn btn-primary text-sm px-3 py-2 rounded-md" onclick="activateEyedropper('borderColor')">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M17.293 2.293a1 1 0 011.414 0l2 2a1 1 0 010 1.414l-14 14a1 1 0 01-1.414 0l-2-2a1 1 0 010-1.414l14-14zM12 14a2 2 0 100-4 2 2 0 000 4z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
             <div class="form-group">
                 <label for="bottomText" class="text-gray-700">Card Description:</label>
                 <input type="text" id="bottomText" placeholder="Enter description or stats" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
             </div>
 
             <div class="form-group">
-                <label for="zurryCardsText" class="text-gray-700">Zurry Cards Text:</label>
+                <label for="zurryCardsText" class="text-gray-700">Signature Text:</label>
                 <input type="text" id="zurryCardsText" value="Zurry Cards" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
             </div>
 
